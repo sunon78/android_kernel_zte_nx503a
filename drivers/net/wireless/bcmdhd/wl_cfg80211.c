@@ -8705,7 +8705,7 @@ static s32 wl_escan_handler(struct wl_priv *wl,
 	u8 *p2p_dev_addr = NULL;
 
 	WL_DBG((" enter event type : %d, status : %d \n",
-		ntoh32(e->event_type), ntoh32(e->status)));
+		ntoh32(e->event_type), status));
 
 	mutex_lock(&wl->usr_sync);
 	/* P2P SCAN is coming from primary interface */
