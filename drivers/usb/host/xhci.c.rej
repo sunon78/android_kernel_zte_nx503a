@@ -1,0 +1,47 @@
+--- drivers/usb/host/xhci.c
++++ drivers/usb/host/xhci.c
+@@ -2593,14 +2599,17 @@ static int xhci_configure_endpoint(struct xhci_hcd *xhci,
+ 	/* Wait for the configure endpoint command to complete */
+ 	timeleft = wait_for_completion_interruptible_timeout(
+ 			cmd_completion,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for %s command\n",
+ 				timeleft == 0 ? "Timeout" : "Signal",
+ 				ctx_change == 0 ?
+ 					"configure endpoint" :
+ 					"evaluate context");
+-		/* FIXME cancel the configure endpoint command */
++		/* cancel the configure endpoint command */
++		ret = xhci_cancel_cmd(xhci, command, cmd_trb);
++		if (ret < 0)
++			return ret;
+ 		return -ETIME;
+ 	}
+ 
+@@ -3564,12 +3575,12 @@ int xhci_alloc_dev(struct usb_hcd *hcd, struct usb_device *udev)
+ 
+ 	/* XXX: how much time for xHC slot assignment? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	if (timeleft <= 0) {
+ 		xhci_warn(xhci, "%s while waiting for a slot\n",
+ 				timeleft == 0 ? "Timeout" : "Signal");
+-		/* FIXME cancel the enable slot request */
+-		return 0;
++		/* cancel the enable slot request */
++		return xhci_cancel_cmd(xhci, NULL, cmd_trb);
+ 	}
+ 
+ 	if (!xhci->slot_id) {
+@@ -3682,7 +3695,7 @@ int xhci_address_device(struct usb_hcd *hcd, struct usb_device *udev)
+ 
+ 	/* ctrl tx can take up to 5 sec; XXX: need more time for xHC? */
+ 	timeleft = wait_for_completion_interruptible_timeout(&xhci->addr_dev,
+-			USB_CTRL_SET_TIMEOUT);
++			XHCI_CMD_DEFAULT_TIMEOUT);
+ 	/* FIXME: From section 4.3.4: "Software shall be responsible for timing
+ 	 * the SetAddress() "recovery interval" required by USB and aborting the
+ 	 * command on a timeout.
