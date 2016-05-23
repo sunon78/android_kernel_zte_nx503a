@@ -929,7 +929,7 @@ static void cgroup_clear_directory(struct dentry *dentry)
 	spin_lock(&dentry->d_lock);
 	node = dentry->d_subdirs.next;
 	while (node != &dentry->d_subdirs) {
-		struct dentry *d = list_entry(node, struct dentry, d_u.d_child);
+		struct dentry *d = list_entry(node, struct dentry, d_child);
 
 		spin_lock_nested(&d->d_lock, DENTRY_D_LOCK_NESTED);
 		list_del_init(node);
@@ -963,7 +963,7 @@ static void cgroup_d_remove_dir(struct dentry *dentry)
 	parent = dentry->d_parent;
 	spin_lock(&parent->d_lock);
 	spin_lock_nested(&dentry->d_lock, DENTRY_D_LOCK_NESTED);
-	list_del_init(&dentry->d_u.d_child);
+	list_del_init(&dentry->d_child);
 	spin_unlock(&dentry->d_lock);
 	spin_unlock(&parent->d_lock);
 	remove_dir(dentry);
@@ -1075,15 +1075,16 @@ static int cgroup_show_options(struct seq_file *seq, struct dentry *dentry)
 
 	mutex_lock(&cgroup_root_mutex);
 	for_each_subsys(root, ss)
-		seq_printf(seq, ",%s", ss->name);
+		seq_show_option(seq, ss->name, NULL);
 	if (test_bit(ROOT_NOPREFIX, &root->flags))
 		seq_puts(seq, ",noprefix");
 	if (strlen(root->release_agent_path))
-		seq_printf(seq, ",release_agent=%s", root->release_agent_path);
+		seq_show_option(seq, "release_agent",
+				root->release_agent_path);
 	if (clone_children(&root->top_cgroup))
 		seq_puts(seq, ",clone_children");
 	if (strlen(root->name))
-		seq_printf(seq, ",name=%s", root->name);
+		seq_show_option(seq, "name", root->name);
 	mutex_unlock(&cgroup_root_mutex);
 	return 0;
 }
