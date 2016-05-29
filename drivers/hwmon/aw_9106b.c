@@ -969,4 +969,3 @@ MODULE_VERSION("1.0");
 MODULE_AUTHOR("wangshuai <wang.shuai12@zte.com.cn>");
 MODULE_DESCRIPTION("aw9106b Linux driver");
 MODULE_ALIAS("platform:aw9106b");
-
