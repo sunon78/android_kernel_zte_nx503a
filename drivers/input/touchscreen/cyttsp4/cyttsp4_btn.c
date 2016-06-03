@@ -42,8 +42,6 @@
 #include <linux/pm_runtime.h>
 #include <linux/slab.h>
 #include <linux/workqueue.h>
-#include <linux/proc_fs.h>
-#include <asm/uaccess.h>
 
 #include "cyttsp4_btn.h"
 #include "cyttsp4_core.h"
@@ -62,62 +60,46 @@ struct cyttsp4_btn_data {
 	bool input_device_registered;
 	char phys[NAME_MAX];
 	u8 pr_buf[CY_MAX_PRBUF_SIZE];
-	atomic_t keypad_enable;
+	unsigned char button_enabled;
 };
 
-static int keypad_enable_proc_read(char *page, char **start, off_t off,
-		int count, int *eof, void *data)
+static ssize_t cyttsp4_button_show(struct device *dev,
+		struct device_attribute *attr, char *buf)
 {
-	struct cyttsp4_btn_data *ts = data;
-	return sprintf(page, "%d\n", atomic_read(&ts->keypad_enable));
+	struct cyttsp4_btn_data *bd = dev_get_drvdata(dev);
+
+	return snprintf(buf, PAGE_SIZE, "%u\n",
+			bd->button_enabled);
 }
 
-static int keypad_enable_proc_write(struct file *file, const char __user *buffer,
-		unsigned long count, void *data)
+static ssize_t cyttsp4_button_store(struct device *dev,
+		struct device_attribute *attr, const char *buf, size_t count)
 {
-	struct cyttsp4_btn_data *ts = data;
-	char buf[10];
+	struct cyttsp4_btn_data *bd = dev_get_drvdata(dev);
+
 	unsigned int val = 0;
 
-	if (count > 10)
-		return count;
+	if (sscanf(buf, "%u", &val) != 1)
+		return -EINVAL;
 
-	if (copy_from_user(buf, buffer, count)) {
-		printk(KERN_ERR "%s: read proc input error.\n", __func__);
-		return count;
-	}
-
-	sscanf(buf, "%d", &val);
 	val = (val == 0 ? 0 : 1);
-	atomic_set(&ts->keypad_enable, val);
+
+	if (bd->button_enabled == val)
+		return count;
+
 	if (val) {
-		set_bit(KEY_BACK, ts->input->keybit);
-		set_bit(KEY_MENU, ts->input->keybit);
-		set_bit(KEY_HOMEPAGE, ts->input->keybit);
+		set_bit(KEY_BACK, bd->input->keybit);
+		set_bit(KEY_MENU, bd->input->keybit);
+		set_bit(KEY_HOMEPAGE, bd->input->keybit);
 	} else {
-		clear_bit(KEY_BACK, ts->input->keybit);
-		clear_bit(KEY_MENU, ts->input->keybit);
-		clear_bit(KEY_HOMEPAGE, ts->input->keybit);
+		clear_bit(KEY_BACK, bd->input->keybit);
+		clear_bit(KEY_MENU, bd->input->keybit);
+		clear_bit(KEY_HOMEPAGE, bd->input->keybit);
 	}
-	input_sync(ts->input);
+
+	bd->button_enabled = val;
 
 	return count;
-}
-
-static int cyttsp4_btn_init_touchpanel_proc(struct cyttsp4_btn_data *bd)
-{
-	struct proc_dir_entry *proc_entry=0;
-
-	struct proc_dir_entry *procdir = proc_mkdir( "touchpanel", NULL );
-
-	proc_entry = create_proc_entry("keypad_enable", 0666, procdir);
-	if (proc_entry) {
-		proc_entry->write_proc = keypad_enable_proc_write;
-		proc_entry->read_proc = keypad_enable_proc_read;
-		proc_entry->data = bd;
-	}
-
-	return 0;
 }
 
 static inline void cyttsp4_btn_key_action(struct cyttsp4_btn_data *bd,
@@ -249,7 +231,7 @@ static int cyttsp4_btn_attention(struct cyttsp4_device *ttsp)
 	struct cyttsp4_btn_data *bd = dev_get_drvdata(dev);
 	int rc = 0;
 
-	if (!atomic_read(&bd->keypad_enable)) {
+	if (!bd->button_enabled) {
 		return 0;
 	}
 
@@ -406,7 +388,7 @@ static int cyttsp4_setup_input_device(struct cyttsp4_device *ttsp)
 	for (i = 0; i < bd->si->si_ofs.num_btns; i++)
 		__set_bit(bd->si->btn[i].key_code, bd->input->keybit);
 
-	atomic_set(&bd->keypad_enable, 1);
+	bd->button_enabled = 1;
 
 	rc = input_register_device(bd->input);
 	if (rc < 0)
@@ -436,6 +418,38 @@ static int cyttsp4_setup_input_attention(struct cyttsp4_device *ttsp)
 		cyttsp4_setup_input_attention, 0);
 
 	return rc;
+}
+
+static struct device_attribute attributes[] = {
+	__ATTR(button, (00664),
+		cyttsp4_button_show,
+		cyttsp4_button_store),
+};
+
+static int add_sysfs_interfaces(struct cyttsp4_btn_data *bd,
+		struct device *dev)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(attributes); i++)
+		if (device_create_file(dev, attributes + i))
+			goto undo;
+
+	return 0;
+undo:
+	for (i--; i >= 0 ; i--)
+		device_remove_file(dev, attributes + i);
+	dev_err(dev, "%s: failed to create sysfs interface\n", __func__);
+	return -ENODEV;
+}
+
+static void remove_sysfs_interfaces(struct cyttsp4_btn_data *bd,
+		struct device *dev)
+{
+	int i;
+
+	for (i = 0; i < ARRAY_SIZE(attributes); i++)
+		device_remove_file(dev, attributes + i);
 }
 
 static int cyttsp4_btn_probe(struct cyttsp4_device *ttsp)
@@ -500,7 +514,12 @@ static int cyttsp4_btn_probe(struct cyttsp4_device *ttsp)
 			cyttsp4_setup_input_attention, 0);
 	}
 
-	cyttsp4_btn_init_touchpanel_proc(bd);
+	dev_dbg(dev, "%s: add sysfs interfaces\n", __func__);
+	rc = add_sysfs_interfaces(bd, dev);
+	if (rc < 0) {
+		dev_err(dev, "%s: Error, fail sysfs init\n", __func__);
+		goto error_init_input;
+	}
 
 #ifdef CONFIG_HAS_EARLYSUSPEND
 	bd->es.level = EARLY_SUSPEND_LEVEL_BLANK_SCREEN + 1;
@@ -553,6 +572,8 @@ static int cyttsp4_btn_release(struct cyttsp4_device *ttsp)
 
 	pm_runtime_suspend(dev);
 	pm_runtime_disable(dev);
+
+	remove_sysfs_interfaces(bd, dev);
 
 	dev_set_drvdata(dev, NULL);
 	kfree(bd);
