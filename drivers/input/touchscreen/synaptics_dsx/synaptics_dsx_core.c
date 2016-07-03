@@ -487,7 +487,7 @@ static ssize_t synaptics_wakeup_gesture_show(struct device *dev,
 {
 	struct synaptics_rmi4_data *rmi4_data = dev_get_drvdata(dev);
 	
-	return snprintf(buf, PAGE_SIZE, "0x%02X\n",	rmi4_data->wakeup_gesture);
+	return snprintf(buf, PAGE_SIZE, "%d\n", rmi4_data->wakeup_gesture);
 }
 
 static ssize_t synaptics_wakeup_gesture_store(struct device *dev,
@@ -501,16 +501,7 @@ static ssize_t synaptics_wakeup_gesture_store(struct device *dev,
 	if (ret < 0)
 		return ret;
 
-	if (value > 0xFF && value < 0)
-		return -EINVAL;
-
-	if (value == 0xFF)
-		value = 0;
-
-	rmi4_data->wakeup_gesture = (u8)value;
-	
-	if (ret)
-		return ret;
+	rmi4_data->wakeup_gesture = (value != 0);
 
 	return size;
 }
