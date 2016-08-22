@@ -86,7 +86,7 @@
 #define NO_SLEEP_ON (1 << 2)
 #define CONFIGURED (1 << 7)
 
-#define ZTEMT_TP_WAKEUP_GESTURE_FUNCTION	0		//add by luochangyang
+#define ZTEMT_TP_WAKEUP_GESTURE_FUNCTION	1		//add by luochangyang
 
 static int synaptics_rmi4_f12_set_enables(struct synaptics_rmi4_data *rmi4_data,
 		unsigned short ctrl28);
@@ -1274,10 +1274,10 @@ static void synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 			dev_dbg(rmi4_data->pdev->dev.parent, "%s: Have a palm.   %d_%d\n",
 				__func__, fingers, fingers);
 #if ZTEMT_SYNAPTICS_DEBUG
-			input_report_key(rmi4_data->input_dev, KEY_POWER, 1);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 1);
 			input_sync(rmi4_data->input_dev);
 
-			input_report_key(rmi4_data->input_dev, KEY_POWER, 0);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 0);
 			input_sync(rmi4_data->input_dev);
 #else
 			/* For large area event */
@@ -1340,10 +1340,10 @@ static void synaptics_rmi4_sensor_report(struct synaptics_rmi4_data *rmi4_data)
 #endif
 		{
 #if ZTEMT_SYNAPTICS_DEBUG
-			input_report_key(rmi4_data->input_dev, KEY_POWER, 1);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 1);
 			input_sync(rmi4_data->input_dev);
 
-			input_report_key(rmi4_data->input_dev, KEY_POWER, 0);
+			input_report_key(rmi4_data->input_dev, KEY_WAKEUP, 0);
 			input_sync(rmi4_data->input_dev);
 #else
 			input_report_key(rmi4_data->input_dev, KEY_F10, 1);
@@ -2469,7 +2469,7 @@ static int synaptics_rmi4_set_input_dev(struct synaptics_rmi4_data *rmi4_data)
 	set_bit(INPUT_PROP_DIRECT, rmi4_data->input_dev->propbit);
 #endif
 	/*luochangyang 2014/03/19*/
-    set_bit(KEY_POWER, rmi4_data->input_dev->keybit);
+    set_bit(KEY_WAKEUP, rmi4_data->input_dev->keybit);
     set_bit(KEY_F10, rmi4_data->input_dev->keybit);
 	/*luochangyang END*/
 
