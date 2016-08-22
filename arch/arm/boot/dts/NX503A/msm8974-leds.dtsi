@@ -20,9 +20,18 @@
 			qcom,mode = "pwm";
 			qcom,pwm-channel = <6>;
 			qcom,pwm-us = <1000>;
+			qcom,start-idx = <0>;
+			qcom,idx-len = <50>;
+			qcom,duty-pcts= [00 02 04 06 08 0a 0c 0e 10 12 
+			                 14 16 18 1a 1c 1e 20 22 24 26 
+			                 28 2a 2c 2e 30 32 34 36 38 3a 
+			                 3c 3e 40 42 44 46 48 4a 4c 4e 
+			                 50 52 54 56 58 5a 5c 5e 60 62 
+			                 64];
 			qcom,max-current = <12>;
 			qcom,default-state = "off";
 			qcom,id = <3>;
+			qcom,use-blink= <1>;
 			linux,default-trigger =
 				"battery-charging";
 		};
@@ -33,9 +42,18 @@
 			qcom,mode = "pwm";
 			qcom,pwm-channel = <5>;
 			qcom,pwm-us = <1000>;
+			qcom,start-idx = <0>;
+			qcom,idx-len = <50>;
+			qcom,duty-pcts= [00 02 04 06 08 0a 0c 0e 10 12 
+			                 14 16 18 1a 1c 1e 20 22 24 26 
+			                 28 2a 2c 2e 30 32 34 36 38 3a 
+			                 3c 3e 40 42 44 46 48 4a 4c 4e 
+			                 50 52 54 56 58 5a 5c 5e 60 62 
+			                 64];
 			qcom,max-current = <12>;
 			qcom,default-state = "off";
 			qcom,id = <4>;
+			qcom,use-blink= <1>;
 			linux,default-trigger = "battery-full";
 		};
 
@@ -45,6 +63,14 @@
 			qcom,mode = "pwm";
 			qcom,pwm-channel = <4>;
 			qcom,pwm-us = <1000>;
+			qcom,start-idx = <0>;
+			qcom,idx-len = <50>;
+			qcom,duty-pcts= [00 02 04 06 08 0a 0c 0e 10 12 
+			                 14 16 18 1a 1c 1e 20 22 24 26 
+			                 28 2a 2c 2e 30 32 34 36 38 3a 
+			                 3c 3e 40 42 44 46 48 4a 4c 4e 
+			                 50 52 54 56 58 5a 5c 5e 60 62 
+			                 64];
 			qcom,max-current = <12>;
 			qcom,id = <5>;
 			status = "disabled";
@@ -148,21 +174,18 @@
 
 		qcom,kpdbl2 {
 			label = "kpdbl";
-			linux,name = "kpdbl-pwm-2";
-			qcom,mode = "pwm";
+			linux,name = "kpdbl-lut-2";
+			qcom,mode = "lpg";
 			qcom,pwm-channel = <9>;
 			qcom,pwm-us = <1000>;
+			qcom,start-idx = <1>;
+			qcom,duty-pcts = [00 00 00 00 64
+					64 00 00 00 00];
 			qcom,id = <7>;
 			qcom,max-current = <20>;
 			qcom,row-id = <1>;
 			qcom,row-src-en;
-                        qcom,start-idx = <1>;
-                        qcom,ramp-step-ms = <120>;
-                        qcom,duty-pcts = [00 00 00 00 64
-                                        64 00 00 00 00];
-                        qcom,use-blink;
-                        qcom,in-order-command-processing;
-
+                        
 		};
 
 		qcom,kpdbl3 {
