@@ -55,7 +55,7 @@
 #include <linux/earlysuspend.h>
 #endif
 
-#define ZTEMT_TP_WAKEUP_GESTURE_FUNCTION	0		//add by luochangyang
+#define ZTEMT_TP_WAKEUP_GESTURE_FUNCTION	1		//add by luochangyang
 
 #define CY_CORE_REQUEST_EXCLUSIVE_TIMEOUT	500
 #define CY_CORE_SLEEP_REQUEST_EXCLUSIVE_TIMEOUT	5000
@@ -3801,8 +3801,8 @@ static ssize_t cyttsp4_easy_wakeup_gesture_show(struct device *dev,
 	ssize_t ret;
 
 	mutex_lock(&cd->system_lock);
-	ret = snprintf(buf, CY_MAX_PRBUF_SIZE, "0x%02X\n",
-			cd->easy_wakeup_gesture);
+	ret = snprintf(buf, CY_MAX_PRBUF_SIZE, "%d\n",
+			(cd->easy_wakeup_gesture != CY_CORE_EWG_NONE));
 	mutex_unlock(&cd->system_lock);
 	return ret;
 }
@@ -3818,14 +3818,11 @@ static ssize_t cyttsp4_easy_wakeup_gesture_store(struct device *dev,
 	if (ret < 0)
 		return ret;
 
-	if (value > 0xFF && value < 0)
-		return -EINVAL;
-
 	pm_runtime_get_sync(dev);
 
 	mutex_lock(&cd->system_lock);
 	if (cd->sysinfo.ready && IS_TTSP_VER_GE(&cd->sysinfo, 2, 2))
-		cd->easy_wakeup_gesture = (u8)value;
+		cd->easy_wakeup_gesture = (value != 0 ? CY_CORE_EWG_TAP_TAP : CY_CORE_EWG_NONE);
 	else
 		ret = -ENODEV;
 	mutex_unlock(&cd->system_lock);
@@ -3888,7 +3885,6 @@ static int cyttsp4_core_parse_dt(struct device * dev,
 		struct cyttsp4_core_platform_data * pdata)
 {
 	struct device_node *np = dev->of_node; 
-
 	/* reset, irq gpio info */
  	pdata->rst_gpio = of_get_named_gpio(np, "cypress,reset-gpio", 0);
 	pdata->irq_gpio = of_get_named_gpio(np, "cypress,irq-gpio", 0);
