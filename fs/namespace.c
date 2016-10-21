@@ -635,6 +635,20 @@ static void attach_mnt(struct mount *mnt, struct path *path)
 	list_add_tail(&mnt->mnt_child, &real_mount(path->mnt)->mnt_mounts);
 }
 
+	static inline void __mnt_make_longterm(struct mount *mnt)
+{
+#ifdef CONFIG_SMP
+	atomic_inc(&mnt->mnt_longterm);
+#endif
+}
+/* needs vfsmount lock for write */
+static inline void __mnt_make_shortterm(struct mount *mnt)
+{
+#ifdef CONFIG_SMP
+	atomic_dec(&mnt->mnt_longterm);
+#endif
+}
+
 /*
  * vfsmount lock must be held for write
  */
