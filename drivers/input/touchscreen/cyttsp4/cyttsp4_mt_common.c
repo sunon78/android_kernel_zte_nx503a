@@ -308,10 +308,10 @@ cyttsp4_xy_worker_exit:
 static void cyttsp4_mt_send_dummy_event(struct cyttsp4_mt_data *md)
 {
 #if ZTEMT_CYPRESS_WAKEUP_GESTURE_DEBUG
-	input_report_key(md->input, KEY_POWER, 1);
+    input_report_key(md->input, KEY_WAKEUP, 1);
     input_sync(md->input);
 
-    input_report_key(md->input, KEY_POWER, 0);
+    input_report_key(md->input, KEY_WAKEUP, 0);
     input_sync(md->input);
 #else
     input_report_key(md->input, KEY_F10, 1);
@@ -608,6 +608,7 @@ static int cyttsp4_setup_input_device(struct cyttsp4_device *ttsp)
 
     /*** ZTEMT Added by luochangyang, 2013/09/11 ***/
     __set_bit(KEY_POWER, md->input->keybit);
+    __set_bit(KEY_WAKEUP, md->input->keybit);
     __set_bit(KEY_F10, md->input->keybit);
     /***ZTEMT END***/
 
