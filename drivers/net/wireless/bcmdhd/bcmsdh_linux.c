@@ -212,10 +212,8 @@ int bcmsdh_probe(struct device *dev)
 	sdhc->next = sdhcinfo;
 	sdhcinfo = sdhc;
 
-#if !defined(CONFIG_HAS_WAKELOCK) && (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 36))
 	if (!device_init_wakeup(dev, 1))
 		pm_dev = dev;
-#endif /* !CONFIG_HAS_WAKELOCK */
 
 	/* Read the vendor/device ID from the CIS */
 	vendevid = bcmsdh_query_device(sdh);
@@ -276,12 +274,10 @@ int bcmsdh_remove(struct device *dev)
 	drvinfo.detach(sdhc->ch);
 	bcmsdh_detach(sdhc->osh, sdhc->sdh);
 
-#if !defined(CONFIG_HAS_WAKELOCK) && (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 36))
 	if (pm_dev) {
 		device_init_wakeup(pm_dev, 0);
 		pm_dev = NULL;
 	}
-#endif /* !CONFIG_HAS_WAKELOCK */
 
 	if (sdhcinfo_null == true)
 		sdhcinfo = NULL;
