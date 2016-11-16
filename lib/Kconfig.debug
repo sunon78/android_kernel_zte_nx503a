@@ -1,4 +1,3 @@
-
 config PRINTK_TIME
 	bool "Show timing information on printks"
 	depends on PRINTK
@@ -88,7 +87,6 @@ config UNUSED_SYMBOLS
 
 config DEBUG_FS
 	bool "Debug Filesystem"
-	select DEBUG_FS_CORE
 	help
 	  debugfs is a virtual file system that kernel developers use to put
 	  debugging files into.  Enable this option to be able to read and
