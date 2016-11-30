@@ -1103,18 +1103,15 @@ int gpiochip_add(struct gpio_chip *chip)
 				? (1 << FLAG_IS_OUT)
 				: 0;
 		}
-	}
 
 #ifdef CONFIG_PINCTRL
 	INIT_LIST_HEAD(&chip->pin_ranges);
 #endif
-
 		of_gpiochip_add(chip);
 	}
 
 unlock:
 	spin_unlock_irqrestore(&gpio_lock, flags);
-
 
 	status = gpiochip_export(chip);
 	if (status) {

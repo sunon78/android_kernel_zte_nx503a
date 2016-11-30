@@ -1688,7 +1688,7 @@ static void try_to_wake_up_local(struct task_struct *p)
 	struct rq *rq = task_rq(p);
 
 	if (rq != this_rq() || p == current) {
-		printk_sched("%s: Failed to wakeup task %d (%s), rq = %p, this_rq = %p, p = %p, current = %p\n",
+		printk_deferred("%s: Failed to wakeup task %d (%s), rq = %p, this_rq = %p, p = %p, current = %p\n",
 			__func__, task_pid_nr(p), p->comm, rq,
 			this_rq(), p, current);
 		return;
@@ -6000,11 +6000,11 @@ static int init_rootdomain(struct root_domain *rd)
 {
 	memset(rd, 0, sizeof(*rd));
 
-	if (!alloc_cpumask_var(&rd->span, GFP_KERNEL))
+	if (!zalloc_cpumask_var(&rd->span, GFP_KERNEL))
 		goto out;
-	if (!alloc_cpumask_var(&rd->online, GFP_KERNEL))
+	if (!zalloc_cpumask_var(&rd->online, GFP_KERNEL))
 		goto free_span;
-	if (!alloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
+	if (!zalloc_cpumask_var(&rd->rto_mask, GFP_KERNEL))
 		goto free_online;
 
 	if (cpupri_init(&rd->cpupri) != 0)

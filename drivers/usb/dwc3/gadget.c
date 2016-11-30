@@ -1789,7 +1789,7 @@ static int dwc3_gadget_vbus_session(struct usb_gadget *_gadget, int is_active)
 	 * Clearing run/stop bit might occur before disconnect event is seen.
 	 * Make sure to let gadget driver know in that case.
 	 */
-	if (!dwc->vbus_active && dwc->start_config_issued) {
+	if (!dwc->vbus_active) {
 		dev_dbg(dwc->dev, "calling disconnect from %s\n", __func__);
 		dwc3_gadget_disconnect_interrupt(dwc);
 	}
@@ -1926,8 +1926,6 @@ static int dwc3_gadget_start(struct usb_gadget *g,
 	else
 		reg |= dwc->maximum_speed;
 	dwc3_writel(dwc->regs, DWC3_DCFG, reg);
-
-	dwc->start_config_issued = false;
 
 	/* Start with SuperSpeed Default */
 	dwc3_gadget_ep0_desc.wMaxPacketSize = cpu_to_le16(512);
@@ -2146,8 +2144,6 @@ static int dwc3_cleanup_done_reqs(struct dwc3 *dwc, struct dwc3_ep *dep,
 				dep->flags &= ~DWC3_EP_MISSED_ISOC;
 			}
 
-			if (last_one)
-				break;
 		} else {
 			if (count && (event->status & DEPEVT_STATUS_SHORT))
 				s_pkt = 1;
