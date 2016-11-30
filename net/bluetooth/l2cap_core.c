@@ -5245,9 +5245,6 @@ static inline int l2cap_move_channel_confirm_rsp(struct l2cap_conn *conn,
 
 	u16 icid;
 
-	if (cmd_len != sizeof(*rsp))
- 		return -EPROTO;
-
 	icid = le16_to_cpu(rsp->icid);
 
 	BT_DBG("icid %d", (int) icid);
