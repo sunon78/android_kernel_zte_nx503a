@@ -148,7 +148,7 @@
 #define GO_BIT_POLL_INTERVAL    15
 #define STANDBY_WAKE_DELAY      1
 
-#define REAL_TIME_PLAYBACK_STRENGTH 0x7F // 100% of overdrive voltage (open loop)
+#define REAL_TIME_PLAYBACK_STRENGTH 0x2D // ~36% of overdrive voltage (open loop)
 
 /* Commands */
 #define HAPTIC_CMDID_PLAY_SINGLE_EFFECT     0x01
