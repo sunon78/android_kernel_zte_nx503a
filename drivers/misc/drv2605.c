@@ -189,6 +189,9 @@ unsigned char nubia_wave_sequence10[] = {
 	WAVEFORM_SEQUENCER_REG7,		0,
 	WAVEFORM_SEQUENCER_REG8,		0,
 };
+
+static int vibe_strength = DEF_VIBE_STRENGTH;
+
 #endif
 
 #ifdef VIBRATOR_AUTO_CALIBRATE
@@ -398,6 +401,80 @@ static void vibrator_off(struct i2c_client *client)
 }
 
 #ifdef VIBRATOR_MULTI_USERMODE
+static ssize_t drv260x_vib_min_show(struct device *dev,
+		struct device_attribute *attr,
+		char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", MIN_VIBE_STRENGTH);
+}
+
+static ssize_t drv260x_vib_max_show(struct device *dev,
+		struct device_attribute *attr,
+		char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", MAX_VIBE_STRENGTH);
+}
+
+static ssize_t drv260x_vib_level_default_show(struct device *dev,
+		struct device_attribute *attr,
+		char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", DEF_VIBE_STRENGTH);
+}
+
+static ssize_t drv260x_vib_level_show(struct device *dev,
+		struct device_attribute *attr,
+		char *buf)
+{
+	return scnprintf(buf, PAGE_SIZE, "%d\n", vibe_strength);
+}
+
+
+static ssize_t drv260x_vib_level_store(struct device *dev,
+		struct device_attribute *attr,
+		const char *buf, size_t count)
+{
+	int rc;
+	int val;
+
+	rc = kstrtoint(buf, 10, &val);
+	if (rc) {
+		pr_err("%s: error getting level\n", __func__);
+		return -EINVAL;
+	}
+
+	if (val < MIN_VIBE_STRENGTH) {
+		pr_err("%s: level %d not in range (%d - %d), using min.\n",
+				__func__, val, MIN_VIBE_STRENGTH, MAX_VIBE_STRENGTH);
+		val = MIN_VIBE_STRENGTH;
+	} else if (val > MAX_VIBE_STRENGTH) {
+		pr_err("%s: level %d not in range (%d - %d), using max.\n",
+				__func__, val, MIN_VIBE_STRENGTH, MAX_VIBE_STRENGTH);
+		val = MAX_VIBE_STRENGTH;
+	}
+
+	vibe_strength = val;
+
+	return strnlen(buf, count);
+}
+
+static DEVICE_ATTR(vtg_min, S_IRUGO, drv260x_vib_min_show, NULL);
+static DEVICE_ATTR(vtg_max, S_IRUGO, drv260x_vib_max_show, NULL);
+static DEVICE_ATTR(vtg_level_default, S_IRUGO, drv260x_vib_level_default_show, NULL);
+static DEVICE_ATTR(vtg_level, S_IRUGO | S_IWUSR, drv260x_vib_level_show, drv260x_vib_level_store);
+
+static struct attribute *timed_dev_attrs[] = {
+	&dev_attr_vtg_min.attr,
+	&dev_attr_vtg_max.attr,
+	&dev_attr_vtg_level_default.attr,
+	&dev_attr_vtg_level.attr,
+	NULL,
+};
+
+static struct attribute_group timed_dev_attr_group = {
+	.attrs = timed_dev_attrs,
+};
+
 /* Real-Time Playback (RTP) Mode */
 static void vibrator_enable_rtp(struct timed_output_dev *dev, int value)
 {
@@ -420,7 +497,7 @@ static void vibrator_enable_rtp(struct timed_output_dev *dev, int value)
 			if (pDrv2605data->audio_haptics_enabled && mode == MODE_AUDIOHAPTIC)
 			setAudioHapticsEnabled(client, NO);
 
-			drv260x_set_rtp_val(client, REAL_TIME_PLAYBACK_STRENGTH);
+			drv260x_set_rtp_val(client, vibe_strength);
 			drv260x_change_mode(client, MODE_REAL_TIME_PLAYBACK);
 			pDrv2605data->vibrator_is_playing = YES;
 			switch_set_state(&pDrv2605data->sw_dev, SW_STATE_RTP_PLAYBACK);
@@ -547,7 +624,7 @@ static void vibrator_enable(struct timed_output_dev *dev, int value)
 			if (pDrv2605data->audio_haptics_enabled && mode == MODE_AUDIOHAPTIC)
 			setAudioHapticsEnabled(client, NO);
 
-			drv260x_set_rtp_val(client, REAL_TIME_PLAYBACK_STRENGTH);
+			drv260x_set_rtp_val(client, vibe_strength);
 			drv260x_change_mode(client, MODE_REAL_TIME_PLAYBACK);
 			pDrv2605data->vibrator_is_playing = YES;
 			switch_set_state(&pDrv2605data->sw_dev, SW_STATE_RTP_PLAYBACK);
@@ -612,6 +689,7 @@ error:
 	dev_err(dev, "%s:Unable to create sysfs\n", __func__);
 	return -1;
 }
+
 #endif
 
 static enum hrtimer_restart vibrator_timer_func(struct hrtimer *timer)
@@ -830,7 +908,7 @@ static ssize_t drv260x_write(struct file* filp, const char* buff, size_t len, lo
 					setAudioHapticsEnabled(client, NO);
 				}
 
-				drv260x_set_rtp_val(client, REAL_TIME_PLAYBACK_STRENGTH);
+				drv260x_set_rtp_val(client, vibe_strength);
 				drv260x_change_mode(client, MODE_REAL_TIME_PLAYBACK);
 				switch_set_state(&pDrv2605data->sw_dev, SW_STATE_RTP_PLAYBACK);
 				pDrv2605data->vibrator_is_playing = YES;
@@ -1071,6 +1149,10 @@ static int Haptics_init(struct drv2605_data *pDrv2605Data)
 	{
 		printk(KERN_ALERT"drv260x: fail to create sysfs\n");
 		goto fail3;
+	}
+
+	if (sysfs_create_group(&vibdata.to_dev.dev->kobj, &timed_dev_attr_group)) {
+		printk(KERN_ALERT "drv260x: fail to create strength tunables\n");
 	}
 #endif
 
