@@ -393,6 +393,7 @@ void zte_mipi_saturation(void)
 #ifdef ZTE_DISP_ENHANCE_DEBUG
 	printk("lcd:%s value=%d\n", __func__, value);
 #endif
+	return;
 
 	switch (value) {
 	case INTENSITY_00:
@@ -466,6 +467,9 @@ void zte_mipi_colortmp(void)
 		break;
 	}
 #else
+
+	return;
+
 	switch (value) {
 	case INTENSITY_00:
 		zte_mdss_pcc_config(&zte_pcc_cfg_warm);
