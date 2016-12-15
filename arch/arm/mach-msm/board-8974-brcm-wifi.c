@@ -11,6 +11,7 @@
 #include <asm/io.h>
 #include <linux/skbuff.h>
 #include <linux/wlan_plat.h>
+#include <linux/partialresume.h>
 #include <linux/if.h> /*For IFHWADDRLEN */
 
 #include <linux/gpio.h>
@@ -286,6 +287,103 @@ static struct resource bcm_wifi_resources[] = {
 	},
 };
 
+#ifdef CONFIG_PARTIALRESUME
+static bool smd_partial_resume(struct partial_resume *pr)
+{
+	return true;
+}
+
+#define PR_INIT_STATE		0
+#define PR_IN_RESUME_STATE	1
+#define PR_RESUME_OK_STATE	2
+#define PR_SUSPEND_OK_STATE	3
+
+static DECLARE_COMPLETION(bcm_pk_comp);
+static DECLARE_COMPLETION(bcm_wd_comp);
+static int bcm_suspend = PR_INIT_STATE;
+static spinlock_t bcm_lock;
+
+/*
+ * Partial Resume State Machine:
+    _______
+   / else [INIT]________________________
+   \______/   | notify_resume           \
+           [IN_RESUME]              wait_for_ready
+           /       \ vote_for_suspend   /
+   vote_for_resume [SUSPEND_OK]________/
+           \       / vote_for_resume  /
+          [RESUME_OK]                /
+                   \________________/
+ */
+
+static bool bcm_wifi_process_partial_resume(int action)
+{
+	bool suspend = false;
+	int timeout = 0;
+
+	if ((action != WIFI_PR_NOTIFY_RESUME) && (bcm_suspend == PR_INIT_STATE))
+		return suspend;
+
+	if (action == WIFI_PR_WAIT_FOR_READY)
+		timeout = wait_for_completion_timeout(&bcm_pk_comp,
+						      msecs_to_jiffies(50));
+
+	spin_lock(&bcm_lock);
+	switch (action) {
+	case WIFI_PR_WAIT_FOR_READY:
+		suspend = (bcm_suspend == PR_SUSPEND_OK_STATE) && (timeout != 0);
+		if (suspend) {
+			spin_unlock(&bcm_lock);
+			timeout = wait_for_completion_timeout(&bcm_wd_comp,
+							msecs_to_jiffies(100));
+			spin_lock(&bcm_lock);
+			suspend = (timeout != 0);
+		}
+		bcm_suspend = PR_INIT_STATE;
+		break;
+	case WIFI_PR_VOTE_FOR_RESUME:
+		bcm_suspend = PR_RESUME_OK_STATE;
+		complete(&bcm_pk_comp);
+		break;
+	case WIFI_PR_VOTE_FOR_SUSPEND:
+		if (bcm_suspend == PR_IN_RESUME_STATE)
+			bcm_suspend = PR_SUSPEND_OK_STATE;
+		complete(&bcm_pk_comp);
+		break;
+	case WIFI_PR_NOTIFY_RESUME:
+		INIT_COMPLETION(bcm_pk_comp);
+		bcm_suspend = PR_IN_RESUME_STATE;
+		break;
+	case WIFI_PR_INIT:
+		bcm_suspend = PR_INIT_STATE;
+		break;
+	case WIFI_PR_WD_INIT:
+		INIT_COMPLETION(bcm_wd_comp);
+		break;
+	case WIFI_PR_WD_COMPLETE:
+		complete(&bcm_wd_comp);
+		break;
+	}
+	spin_unlock(&bcm_lock);
+	return suspend;
+}
+
+bool wlan_vote_for_suspend(void)
+{
+	return bcm_wifi_process_partial_resume(WIFI_PR_VOTE_FOR_SUSPEND);
+}
+EXPORT_SYMBOL(wlan_vote_for_suspend);
+
+static bool bcm_wifi_partial_resume(struct partial_resume *pr)
+{
+	bool suspend;
+
+	suspend = bcm_wifi_process_partial_resume(WIFI_PR_WAIT_FOR_READY);
+	pr_info("%s: vote %d\n", __func__, suspend);
+	return suspend;
+}
+#endif
+
 static struct wifi_platform_data bcm_wifi_control = {
 	.set_power      = bcm_wifi_power,
 	.set_reset      = bcm_wifi_reset,
@@ -294,6 +392,9 @@ static struct wifi_platform_data bcm_wifi_control = {
 #ifdef GET_WIFI_MAC_ADDR_FROM_NV_ITEM	
 	.get_mac_addr	= bcm_wifi_get_mac_addr,
 #endif 	
+#ifdef CONFIG_PARTIALRESUME
+	.partial_resume = bcm_wifi_process_partial_resume,
+#endif
 };
 
 static struct platform_device bcm_wifi_device = {
@@ -322,5 +423,41 @@ int __init bcm_wifi_init(void)
 	pr_err("----%s----\n", __func__);
         return ret;
 }
+
+#ifdef CONFIG_PARTIALRESUME
+static struct partial_resume smd_pr = {
+	.irq = 200,
+	.partial_resume = smd_partial_resume,
+};
+
+static struct partial_resume mpm_pr = {
+	.irq = 203,
+	.partial_resume = smd_partial_resume,
+};
+
+static struct partial_resume wlan_pr = {
+	.partial_resume = bcm_wifi_partial_resume,
+};
+
+int __init wlan_partial_resume_init(void)
+{
+	int rc;
+
+	spin_lock_init(&bcm_lock); /* Setup partial resume */
+	complete(&bcm_wd_comp);    /* Prepare for case when WD is not set */
+	wlan_pr.irq = bcm_wifi_device.resource->start;
+	rc = register_partial_resume(&wlan_pr);
+	pr_debug("%s: after registering %pF: %d\n", __func__,
+		 wlan_pr.partial_resume, rc);
+	rc = register_partial_resume(&mpm_pr);
+	rc = register_partial_resume(&smd_pr);
+	pr_debug("%s: after registering %pF: %d\n", __func__,
+		 smd_pr.partial_resume, rc);
+	return rc;
+}
+
+late_initcall(wlan_partial_resume_init);
+#endif
+
 
 //late_initcall(bcm_wifi_init);

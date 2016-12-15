@@ -37,6 +37,11 @@
 #include <linux/mmc/sdio_func.h>
 #include <linux/mmc/sdio_ids.h>
 
+#ifdef CONFIG_PARTIALRESUME
+#include <linux/wakeup_reason.h>
+#include "wl_android.h"
+#endif
+
 #if !defined(SDIO_VENDOR_ID_BROADCOM)
 #define SDIO_VENDOR_ID_BROADCOM		0x02d0
 #endif /* !defined(SDIO_VENDOR_ID_BROADCOM) */
@@ -113,6 +118,9 @@ static int bcmsdh_sdmmc_probe(struct sdio_func *func,
 	int ret = 0;
 	static struct sdio_func sdio_func_0;
 
+	if (!gInstance)
+		return -EINVAL;
+
 	if (func) {
 		sd_trace(("bcmsdh_sdmmc: %s Enter\n", __FUNCTION__));
 		sd_trace(("sdio_bcmsdh: func->class=%x\n", func->class));
@@ -139,7 +147,7 @@ static int bcmsdh_sdmmc_probe(struct sdio_func *func,
 	#endif
 			sd_trace(("F2 found, calling bcmsdh_probe...\n"));
 			ret = bcmsdh_probe(&func->dev);
-			if (ret < 0 && gInstance)
+			if (ret < 0)
 				gInstance->func[2] = NULL;
 		}
 	} else {
@@ -191,6 +199,9 @@ static const struct sdio_device_id bcmsdh_sdmmc_ids[] = {
 MODULE_DEVICE_TABLE(sdio, bcmsdh_sdmmc_ids);
 
 #if (LINUX_VERSION_CODE > KERNEL_VERSION(2, 6, 39)) && defined(CONFIG_PM)
+
+int bcmsdh_get_irq(void);
+
 static int bcmsdh_sdmmc_suspend(struct device *pdev)
 {
 	struct sdio_func *func = dev_to_sdio_func(pdev);
@@ -218,6 +229,9 @@ static int bcmsdh_sdmmc_suspend(struct device *pdev)
 	}
 #if defined(OOB_INTR_ONLY)
 	bcmsdh_oob_intr_set(0);
+#ifdef CONFIG_PARTIALRESUME
+	wifi_process_partial_resume(WIFI_PR_INIT);
+#endif
 #endif 
 	dhd_mmc_suspend = TRUE;
 	smp_mb();
@@ -229,14 +243,26 @@ static int bcmsdh_sdmmc_resume(struct device *pdev)
 {
 #if defined(OOB_INTR_ONLY)
 	struct sdio_func *func = dev_to_sdio_func(pdev);
-#endif 
+#endif
+	int wakeup = 0;
+#if defined(CONFIG_PARTIALRESUME) || defined(DHD_WAKE_STATUS)
+	wakeup = check_wakeup_reason(bcmsdh_get_irq());
+#endif /* CONFIG_PARTIALRESUME || DHD_WAKE_STATUS */
 	sd_trace(("%s Enter\n", __FUNCTION__));
 	dhd_mmc_suspend = FALSE;
 #if defined(OOB_INTR_ONLY)
-	if ((func->num == 2) && dhd_os_check_if_up(bcmsdh_get_drvdata()))
+	if ((func->num == 2) && dhd_os_check_if_up(bcmsdh_get_drvdata())) {
+		if (wakeup) {
+#ifdef CONFIG_PARTIALRESUME
+			wifi_process_partial_resume(WIFI_PR_NOTIFY_RESUME);
+#endif
+#ifdef DHD_WAKE_STATUS
+			bcmsdh_set_get_wake(1);
+#endif
+		}
 		bcmsdh_oob_intr_set(1);
-#endif 
-
+	}
+#endif
 	smp_mb();
 	return 0;
 }
