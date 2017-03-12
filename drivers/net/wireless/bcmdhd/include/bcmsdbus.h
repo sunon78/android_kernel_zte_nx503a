@@ -2,9 +2,27 @@
  * Definitions for API from sdio common code (bcmsdh) to individual
  * host controller drivers.
  *
- * $Copyright Open Broadcom Corporation$
+ * Copyright (C) 1999-2013, Broadcom Corporation
+ * 
+ *      Unless you and Broadcom execute a separate written software license
+ * agreement governing use of this software, this software is licensed to you
+ * under the terms of the GNU General Public License version 2 (the "GPL"),
+ * available at http://www.broadcom.com/licenses/GPLv2.php, with the
+ * following added to such license:
+ * 
+ *      As a special exception, the copyright holders of this software give you
+ * permission to link this software with independent modules, and to copy and
+ * distribute the resulting executable under terms of your choice, provided that
+ * you also meet, for each linked independent module, the terms and conditions of
+ * the license of that module.  An independent module is a module which is not
+ * derived from this software.  The special exception does not apply to any
+ * modifications of the software.
+ * 
+ *      Notwithstanding the above, under no circumstances may you combine this
+ * software in any way with any other Broadcom software provided under a license
+ * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdbus.h 387187 2013-02-24 09:19:34Z $
+ * $Id: bcmsdbus.h 408155 2013-06-17 21:52:27Z $
  */
 
 #ifndef	_sdio_api_h_
@@ -41,17 +59,22 @@
 
 #ifdef BCMSDIOH_TXGLOM_HIGHSPEED
 #define SDPCM_DEFGLOM_MODE	SDPCM_TXGLOM_MDESC
-#ifdef CUSTOM_TXGLOM_SIZE
-#define SDPCM_DEFGLOM_SIZE  CUSTOM_TXGLOM_SIZE
+#ifdef CUSTOM_DEF_TXGLOM_SIZE
+#define SDPCM_DEFGLOM_SIZE  CUSTOM_DEF_TXGLOM_SIZE
 #else
 #define SDPCM_DEFGLOM_SIZE  10
-#endif /* CUSTOM_TXGLOM_SIZE */
+#endif /* CUSTOM_DEF_TXGLOM_SIZE */
 #else
 #define SDPCM_DEFGLOM_MODE	SDPCM_TXGLOM_CPY
 #define SDPCM_DEFGLOM_SIZE  3
 #endif /* BCMSDIOH_TXGLOM_HIGHSPEED */
-#endif /* BCMSDIOH_TXGLOM */
 
+#if SDPCM_DEFGLOM_SIZE > SDPCM_MAXGLOM_SIZE
+#warning "SDPCM_DEFGLOM_SIZE cannot be higher than SDPCM_MAXGLOM_SIZE!!"
+#undef SDPCM_DEFGLOM_SIZE
+#define SDPCM_DEFGLOM_SIZE SDPCM_MAXGLOM_SIZE
+#endif
+#endif /* BCMSDIOH_TXGLOM */
 
 typedef int SDIOH_API_RC;
 

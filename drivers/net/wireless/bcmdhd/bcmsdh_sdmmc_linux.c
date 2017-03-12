@@ -2,13 +2,13 @@
  * BCMSDH Function Driver for the native SDIO/MMC driver in the Linux Kernel
  *
  * Copyright (C) 1999-2013, Broadcom Corporation
- * 
+ *
  *      Unless you and Broadcom execute a separate written software license
  * agreement governing use of this software, this software is licensed to you
  * under the terms of the GNU General Public License version 2 (the "GPL"),
  * available at http://www.broadcom.com/licenses/GPLv2.php, with the
  * following added to such license:
- * 
+ *
  *      As a special exception, the copyright holders of this software give you
  * permission to link this software with independent modules, and to copy and
  * distribute the resulting executable under terms of your choice, provided that
@@ -16,12 +16,12 @@
  * the license of that module.  An independent module is a module which is not
  * derived from this software.  The special exception does not apply to any
  * modifications of the software.
- * 
+ *
  *      Notwithstanding the above, under no circumstances may you combine this
  * software in any way with any other Broadcom software provided under a license
  * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: bcmsdh_sdmmc_linux.c 383841 2013-02-08 00:10:58Z $
+ * $Id: bcmsdh_sdmmc_linux.c 404103 2013-05-23 20:07:27Z $
  */
 
 #include <typedefs.h>
@@ -72,9 +72,6 @@
 #if !defined(SDIO_DEVICE_ID_BROADCOM_43239)
 #define SDIO_DEVICE_ID_BROADCOM_43239    43239
 #endif /* !defined(SDIO_DEVICE_ID_BROADCOM_43239) */
-#if !defined(SDIO_DEVICE_ID_BROADCOM_4335)
-#define SDIO_DEVICE_ID_BROADCOM_4335    4335
-#endif /* !defined(SDIO_DEVICE_ID_BROADCOM_4335) */
 
 
 #include <bcmsdh_sdmmc.h>
@@ -84,7 +81,6 @@
 #ifdef WL_CFG80211
 extern void wl_cfg80211_set_parent_dev(void *dev);
 #endif
-
 extern void sdioh_sdmmc_devintr_off(sdioh_info_t *sd);
 extern void sdioh_sdmmc_devintr_on(sdioh_info_t *sd);
 extern int dhd_os_check_wakelock(void *dhdp);
@@ -191,7 +187,6 @@ static const struct sdio_device_id bcmsdh_sdmmc_ids[] = {
 	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4334) },
 	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4324) },
 	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_43239) },
-	{ SDIO_DEVICE(SDIO_VENDOR_ID_BROADCOM, SDIO_DEVICE_ID_BROADCOM_4335) },
 	{ SDIO_DEVICE_CLASS(SDIO_CLASS_NONE)		},
 	{ /* end: all zeroes */				},
 };
@@ -232,7 +227,7 @@ static int bcmsdh_sdmmc_suspend(struct device *pdev)
 #ifdef CONFIG_PARTIALRESUME
 	wifi_process_partial_resume(WIFI_PR_INIT);
 #endif
-#endif 
+#endif
 	dhd_mmc_suspend = TRUE;
 	smp_mb();
 

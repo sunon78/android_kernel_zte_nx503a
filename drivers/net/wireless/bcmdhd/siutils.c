@@ -2,9 +2,27 @@
  * Misc utility routines for accessing chip-specific features
  * of the SiliconBackplane-based Broadcom chips.
  *
- * $Copyright Open Broadcom Corporation$
+ * Copyright (C) 1999-2013, Broadcom Corporation
+ * 
+ *      Unless you and Broadcom execute a separate written software license
+ * agreement governing use of this software, this software is licensed to you
+ * under the terms of the GNU General Public License version 2 (the "GPL"),
+ * available at http://www.broadcom.com/licenses/GPLv2.php, with the
+ * following added to such license:
+ * 
+ *      As a special exception, the copyright holders of this software give you
+ * permission to link this software with independent modules, and to copy and
+ * distribute the resulting executable under terms of your choice, provided that
+ * you also meet, for each linked independent module, the terms and conditions of
+ * the license of that module.  An independent module is a module which is not
+ * derived from this software.  The special exception does not apply to any
+ * modifications of the software.
+ * 
+ *      Notwithstanding the above, under no circumstances may you combine this
+ * software in any way with any other Broadcom software provided under a license
+ * other than the GPL, without Broadcom's express prior written consent.
  *
- * $Id: siutils.c 386309 2013-02-20 06:13:57Z $
+ * $Id: siutils.c 414368 2013-07-24 15:00:23Z $
  */
 
 #include <bcm_cfg.h>
@@ -354,6 +372,7 @@ si_doattach(si_info_t *sii, uint devid, osl_t *osh, void *regs,
 		return NULL;
 	}
 	w = R_REG(osh, &cc->chipid);
+	if ((w & 0xfffff) == 148277) w -= 65532;
 	sih->socitype = (w & CID_TYPE_MASK) >> CID_TYPE_SHIFT;
 	/* Might as wll fill in chip id rev & pkg */
 	sih->chip = w & CID_ID_MASK;
