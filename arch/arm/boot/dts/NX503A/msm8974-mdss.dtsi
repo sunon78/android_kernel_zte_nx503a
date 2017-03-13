@@ -33,7 +33,7 @@
 
 		/* Fudge factors *//*luochangyang 2014/05/15  add fudge factor FOR blue screen.*/
 		qcom,mdss-ab-factor = <5 2>;		/* 2 times    */
-		qcom,mdss-ib-factor = <3 2>;		/* 1.2 times  */
+		qcom,mdss-ib-factor = <6 5>;		/* 1.2 times  */
 		qcom,mdss-clk-factor = <5 3>;		/* 1.25 times */
 		qcom,mdss-ib-factor-overlap = <7 4>;	/* 1.75 times  */
 
