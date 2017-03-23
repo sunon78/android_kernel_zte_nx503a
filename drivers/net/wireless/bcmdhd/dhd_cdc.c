@@ -1,27 +1,9 @@
 /*
  * DHD Protocol Module for CDC and BDC.
  *
- * Copyright (C) 1999-2013, Broadcom Corporation
- * 
- *      Unless you and Broadcom execute a separate written software license
- * agreement governing use of this software, this software is licensed to you
- * under the terms of the GNU General Public License version 2 (the "GPL"),
- * available at http://www.broadcom.com/licenses/GPLv2.php, with the
- * following added to such license:
- * 
- *      As a special exception, the copyright holders of this software give you
- * permission to link this software with independent modules, and to copy and
- * distribute the resulting executable under terms of your choice, provided that
- * you also meet, for each linked independent module, the terms and conditions of
- * the license of that module.  An independent module is a module which is not
- * derived from this software.  The special exception does not apply to any
- * modifications of the software.
- * 
- *      Notwithstanding the above, under no circumstances may you combine this
- * software in any way with any other Broadcom software provided under a license
- * other than the GPL, without Broadcom's express prior written consent.
+ * $Copyright Open Broadcom Corporation$
  *
- * $Id: dhd_cdc.c 416698 2013-08-06 07:53:34Z $
+ * $Id: dhd_cdc.c 393623 2013-03-28 06:27:09Z $
  *
  * BDC is like CDC, except it includes a header for data packets to convey
  * packet priority over the bus, and flags (e.g. to indicate checksum status
@@ -66,6 +48,8 @@ typedef struct dhd_prot {
 	unsigned char buf[WLC_IOCTL_MAXLEN + ROUND_UP_MARGIN];
 } dhd_prot_t;
 
+extern int module_remove;
+
 
 static int
 dhdcdc_msg(dhd_pub_t *dhd)
@@ -100,8 +84,12 @@ dhdcdc_cmplt(dhd_pub_t *dhd, uint32 id, uint32 len)
 	dhd_prot_t *prot = dhd->prot;
 
 	DHD_TRACE(("%s: Enter\n", __FUNCTION__));
-
-
+#if 0
+	if ((dhd->busstate == DHD_BUS_DOWN) || dhd->hang_was_sent || module_remove) {
+		DHD_ERROR(("%s : bus is down. we have nothing to do\n", __FUNCTION__));
+		return -EIO;
+	}
+#endif
 	do {
 		ret = dhd_bus_rxctl(dhd->bus, (uchar*)&prot->msg, cdc_len);
 		if (ret < 0)
@@ -117,6 +105,7 @@ dhdcdc_query_ioctl(dhd_pub_t *dhd, int ifidx, uint cmd, void *buf, uint len, uin
 {
 	dhd_prot_t *prot = dhd->prot;
 	cdc_ioctl_t *msg = &prot->msg;
+	void *info;
 	int ret = 0, retries = 0;
 	uint32 id, flags = 0;
 
@@ -176,11 +165,15 @@ retry:
 		goto done;
 	}
 
+	/* Check info buffer */
+	info = (void*)&msg[1];
+
 	/* Copy info buffer */
 	if (buf)
 	{
 		if (ret < (int)len)
 			len = ret;
+		//memcpy(buf, info, len);
 		memcpy(buf, (void*) prot->buf, len);
 	}
 
@@ -274,6 +267,7 @@ dhd_prot_ioctl(dhd_pub_t *dhd, int ifidx, wl_ioctl_t * ioc, void * buf, int len)
 	uint8 action;
 
 	if ((dhd->busstate == DHD_BUS_DOWN) || dhd->hang_was_sent) {
+//	if ((dhd->busstate == DHD_BUS_DOWN) || dhd->hang_was_sent || module_remove) {
 		DHD_ERROR(("%s : bus is down. we have nothing to do\n", __FUNCTION__));
 		goto done;
 	}
@@ -515,8 +509,6 @@ dhd_prot_detach(dhd_pub_t *dhd)
 {
 #ifdef PROP_TXSTATUS
 	dhd_wlfc_deinit(dhd);
-	if (dhd->plat_deinit)
-		dhd->plat_deinit((void *)dhd);
 #endif
 #ifndef CONFIG_DHD_USE_STATIC_BUF
 	MFREE(dhd->osh, dhd->prot, sizeof(dhd_prot_t));
@@ -556,6 +548,11 @@ dhd_prot_init(dhd_pub_t *dhd)
 	if (dhd_download_fw_on_driverload)
 #endif /* defined(WL_CFG80211) */
 		ret = dhd_preinit_ioctls(dhd);
+
+#ifdef PROP_TXSTATUS
+	ret = dhd_wlfc_init(dhd);
+#endif
+
 	/* Always assumes wl for now */
 	dhd->iswl = TRUE;
 
