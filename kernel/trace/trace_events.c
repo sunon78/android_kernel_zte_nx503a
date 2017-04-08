@@ -8,7 +8,6 @@
  *
  */
 
-#define REALLY_WANT_DEBUGFS
 #include <linux/workqueue.h>
 #include <linux/spinlock.h>
 #include <linux/kthread.h>
