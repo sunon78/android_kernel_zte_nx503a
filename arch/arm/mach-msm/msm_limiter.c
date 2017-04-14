@@ -22,7 +22,7 @@
 #define MSM_LIMITER_MINOR		4
 
 /* Recommended to set below values from userspace. */
-#define FREQ_CONTROL			1
+#define FREQ_CONTROL			0
 #define DEBUG_MODE			1
 #define MPD_ENABLED			0
 
