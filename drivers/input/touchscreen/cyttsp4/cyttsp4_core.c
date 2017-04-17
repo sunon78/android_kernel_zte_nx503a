@@ -55,7 +55,7 @@
 #include <linux/earlysuspend.h>
 #endif
 
-#define ZTEMT_TP_WAKEUP_GESTURE_FUNCTION	1		//add by luochangyang
+#define ZTEMT_TP_WAKEUP_GESTURE_FUNCTION	0		//add by luochangyang
 
 #define CY_CORE_REQUEST_EXCLUSIVE_TIMEOUT	500
 #define CY_CORE_SLEEP_REQUEST_EXCLUSIVE_TIMEOUT	5000
@@ -3801,8 +3801,8 @@ static ssize_t cyttsp4_easy_wakeup_gesture_show(struct device *dev,
 	ssize_t ret;
 
 	mutex_lock(&cd->system_lock);
-	ret = snprintf(buf, CY_MAX_PRBUF_SIZE, "%d\n",
-			(cd->easy_wakeup_gesture != CY_CORE_EWG_NONE));
+	ret = snprintf(buf, CY_MAX_PRBUF_SIZE, "0x%02X\n",
+			cd->easy_wakeup_gesture);
 	mutex_unlock(&cd->system_lock);
 	return ret;
 }
@@ -3818,11 +3818,14 @@ static ssize_t cyttsp4_easy_wakeup_gesture_store(struct device *dev,
 	if (ret < 0)
 		return ret;
 
+	if (value > 0xFF && value < 0)
+		return -EINVAL;
+
 	pm_runtime_get_sync(dev);
 
 	mutex_lock(&cd->system_lock);
 	if (cd->sysinfo.ready && IS_TTSP_VER_GE(&cd->sysinfo, 2, 2))
-		cd->easy_wakeup_gesture = (value != 0 ? CY_CORE_EWG_TAP_TAP : CY_CORE_EWG_NONE);
+		cd->easy_wakeup_gesture = (u8)value;
 	else
 		ret = -ENODEV;
 	mutex_unlock(&cd->system_lock);
