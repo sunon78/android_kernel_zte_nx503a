@@ -54,6 +54,9 @@
 #elif defined(CONFIG_HAS_EARLYSUSPEND)
 #include <linux/earlysuspend.h>
 #endif
+#ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+#endif
 
 #define CY_CORE_REQUEST_EXCLUSIVE_TIMEOUT	500
 #define CY_CORE_SLEEP_REQUEST_EXCLUSIVE_TIMEOUT	5000
@@ -3486,6 +3489,10 @@ static int cyttsp4_fb_notifier_callback(struct notifier_block *self,
 		blank = evdata->data;
 		if (*blank == FB_BLANK_UNBLANK) {
 			rc = cyttsp4_core_wake(cd);
+			#ifdef CONFIG_STATE_NOTIFIER
+ 			state_resume();
+ 			#endif
+
         	if (rc < 0) {
         		dev_err(dev, "%s: Error on wake\n", __func__);
         	}
@@ -3493,6 +3500,9 @@ static int cyttsp4_fb_notifier_callback(struct notifier_block *self,
 		}
 		else if (*blank == FB_BLANK_POWERDOWN) {
 			rc = cyttsp4_core_sleep(cd);
+			#ifdef CONFIG_STATE_NOTIFIER
+			state_suspend();
+			#endif
         	if (rc < 0) {
         		dev_err(dev, "%s: Error on sleep\n", __func__);
         	}

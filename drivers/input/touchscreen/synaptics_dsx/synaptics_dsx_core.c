@@ -30,6 +30,9 @@
 #ifdef KERNEL_ABOVE_2_6_38
 #include <linux/input/mt.h>
 #endif
+#ifdef CONFIG_STATE_NOTIFIER
+#include <linux/state_notifier.h>
+#endif
 
 #define INPUT_PHYS_NAME "synaptics_dsx/input0"
 
@@ -3368,10 +3371,16 @@ static int synaptics_rmi4_fb_notifier_callback(struct notifier_block *self,
 		if (*blank == FB_BLANK_UNBLANK) {
 			synaptics_rmi4_ztemt_wake(rmi4_data);
 			dev_info(&(rmi4_data->input_dev->dev), "ztemt %s: Wake!\n", __func__);
+	    #ifdef CONFIG_STATE_NOTIFIER
+			state_resume();
+	    #endif
 		}
 		else if (*blank == FB_BLANK_POWERDOWN) {
 			synaptics_rmi4_ztemt_sleep(rmi4_data);
 			dev_info(&(rmi4_data->input_dev->dev), "ztemt %s: Sleep!\n", __func__);
+	    #ifdef CONFIG_STATE_NOTIFIER
+ 			state_suspend();
+            #endif
 		}
 	}
 
