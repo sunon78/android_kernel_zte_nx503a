@@ -47,22 +47,6 @@ static struct msm_sensor_power_setting imx135_power_setting[] = {
 		.config_val = GPIO_OUT_LOW,
 		.delay = 1,
 	},
-	#if defined(CONFIG_ZTE_OIS)
-		{	// OIS_RESET
-			.seq_type = SENSOR_GPIO,
-			.seq_val = SENSOR_GPIO_OIS_RESET,
-			.config_val = GPIO_OUT_LOW,
-			.delay = 1,
-		},
-	#endif
-	#if defined(CONFIG_ZTE_PROXY)
-		{										//LDAF_EN, PMIC_GPIO 1
-			.seq_type = SENSOR_GPIO,
-			.seq_val = SENSOR_GPIO_LDAF_EN,
-			.config_val = GPIO_OUT_HIGH,
-			.delay = 3,
-		},
-	#endif
 	{
 		.seq_type = SENSOR_GPIO,
 		.seq_val = SENSOR_GPIO_RESET,
@@ -95,14 +79,6 @@ static struct msm_sensor_power_setting imx135_power_setting[] = {
 		.config_val = 24000000,
 		.delay = 1,
 	},
-	#if defined(CONFIG_ZTE_OIS)
-		{
-			.seq_type = SENSOR_GPIO,
-			.seq_val = SENSOR_GPIO_OIS_RESET,
-			.config_val = GPIO_OUT_HIGH,
-			.delay = 1,
-		},
-	#endif
 	{
 		.seq_type = SENSOR_I2C_MUX,
 		.seq_val = 0,
