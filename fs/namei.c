@@ -1798,8 +1798,10 @@ static int path_lookupat(int dfd, const char *name,
 	}
 
 	if (!err) {
-		if (d_is_su(nd->path.dentry) && !su_visible())
-			err = -ENOENT;
+		if (d_is_su(nd->path.dentry) && !su_visible()) {
+				path_put(&nd->path);
+				err = -ENOENT;
+			}
 	}
 
 	if (base)
