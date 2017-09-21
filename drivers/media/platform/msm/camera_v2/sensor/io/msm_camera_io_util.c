@@ -107,17 +107,6 @@ void msm_camera_io_memcpy(void __iomem *dest_addr,
 	msm_camera_io_dump(dest_addr, len);
 }
 
-void msm_camera_io_memcpy_mb(void __iomem *dest_addr,
-	void __iomem *src_addr, u32 len)
-{
-	int i;
-	u32 *d = (u32 *) dest_addr;
-	u32 *s = (u32 *) src_addr;
-
-	for (i = 0; i < (len / 4); i++)
-		msm_camera_io_w_mb(*s++, d++);
-}
-
 int msm_cam_clk_sel_src(struct device *dev, struct msm_cam_clk_info *clk_info,
 		struct msm_cam_clk_info *clk_src_info, int num_clk)
 {
@@ -251,6 +240,12 @@ int msm_camera_config_vreg(struct device *dev, struct camera_vreg_t *cam_vreg,
 		pr_err("%s:%d vreg sequence invalid\n", __func__, __LINE__);
 		return -EINVAL;
 	}
+
+	if (cam_vreg == NULL) {
+		pr_err("%s:%d cam_vreg sequence invalid\n", __func__, __LINE__);
+		return -EINVAL;
+	}
+
 	if (!num_vreg_seq)
 		num_vreg_seq = num_vreg;
 

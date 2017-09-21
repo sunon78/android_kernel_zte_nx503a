@@ -34,6 +34,7 @@
 
 #define fh_to_private(__fh) \
 	container_of(__fh, struct camera_v4l2_private, fh)
+#define MAX_STREAM_ID 0x0000FFFF
 
 struct camera_v4l2_private {
 	struct v4l2_fh fh;
@@ -592,6 +593,13 @@ static int camera_v4l2_open(struct file *filep)
 
 	atomic_add(1, &pvdev->opened);
 	atomic_add(1, &pvdev->stream_cnt);
+
+	/*when pack session and stream id in userspace, max stream id is 0x0000FFFF*/
+	if(atomic_read(&pvdev->stream_cnt) > MAX_STREAM_ID) {
+		pr_err("%s: stream id exceeds %d, rotated to 1\n",
+			__func__, MAX_STREAM_ID);
+		atomic_set(&pvdev->stream_cnt, 1);
+	}
 	return rc;
 
 post_fail:
@@ -670,22 +678,12 @@ static int camera_v4l2_close(struct file *filep)
 	return rc;
 }
 
-#ifdef CONFIG_COMPAT
-long camera_v4l2_compat_ioctl(struct file *file, unsigned int cmd,
-	unsigned long arg)
-{
-	return -ENOIOCTLCMD;
-}
-#endif
 static struct v4l2_file_operations camera_v4l2_fops = {
 	.owner   = THIS_MODULE,
 	.open	= camera_v4l2_open,
 	.poll	= camera_v4l2_poll,
 	.release = camera_v4l2_close,
 	.ioctl   = video_ioctl2,
-#ifdef CONFIG_COMPAT
-	.compat_ioctl32 = camera_v4l2_compat_ioctl,
-#endif
 };
 
 int camera_init_v4l2(struct device *dev, unsigned int *session)

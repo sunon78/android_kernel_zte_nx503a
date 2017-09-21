@@ -60,13 +60,28 @@ static int msm_buf_mngr_buf_done(struct msm_buf_mngr_device *buf_mngr_dev,
 		if ((bufs->session_id == buf_info->session_id) &&
 			(bufs->stream_id == buf_info->stream_id) &&
 			(bufs->vb2_buf->v4l2_buf.index == buf_info->index)) {
+/*Crash rb_tree 2*/
+#if 0
 			bufs->vb2_buf->v4l2_buf.sequence  = buf_info->frame_id;
 			bufs->vb2_buf->v4l2_buf.timestamp = buf_info->timestamp;
 			bufs->vb2_buf->v4l2_buf.reserved = 0;
+#endif
+/*Crash rb_tree 2*/
 			ret = buf_mngr_dev->vb2_ops.buf_done
 					(bufs->vb2_buf,
 						buf_info->session_id,
 						buf_info->stream_id);
+/*Crash rb_tree 2*/
+#if 1
+			if (!ret) {
+						bufs->vb2_buf->v4l2_buf.sequence  = buf_info->frame_id;
+						bufs->vb2_buf->v4l2_buf.timestamp = buf_info->timestamp;
+						bufs->vb2_buf->v4l2_buf.reserved = 0;
+			} else {
+						pr_err("%s:vb2_ops failed %d type= %d\n", __func__, ret,bufs->vb2_buf->v4l2_buf.type);
+            }
+#endif
+/*Crash rb_tree 2*/
 			list_del_init(&bufs->entry);
 			kfree(bufs);
 			break;
@@ -250,4 +265,3 @@ module_init(msm_buf_mngr_init);
 module_exit(msm_buf_mngr_exit);
 MODULE_DESCRIPTION("MSM Buffer Manager");
 MODULE_LICENSE("GPL v2");
-
